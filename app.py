@@ -21,13 +21,14 @@ Two modes (--mode):
     Use it if Auto-Map is unavailable or you only want a subset of rows
     created from scratch.
 
-Standard fields (the tool adds these itself — do NOT put them in the JSON):
+Standard fields (the keys JSON files include them; the tool also adds any
+that are missing, and dedupes by parameter name so each is mapped once):
   Top, before all file fields:    Property Type -> Property Type,
                                   Address -> Address
   Bottom, after all file fields:  task_id, FormID, UniqueID, Date_Created,
                                   env, added_time, ip_address, house_id and
                                   live_key (see STANDARD_TOP / STANDARD_BOTTOM).
-  Pass --no-standard to turn this off (not recommended).
+  Pass --no-standard to turn the tool's own adding off (not recommended).
 
 Hidden fields:
   Hidden fields (orange / yellow eye-slash icon in the form builder) are
@@ -144,10 +145,10 @@ OPTION_SELECTORS = [
     "div[class*='option']",
 ]
 
-# Standard fields the tool always adds itself (Shreyan's layout rule,
-# 2026-11-19). They are NOT part of the input JSON. If the input file
-# already contains a pair with the same parameter name, the file's pair
-# keeps its file position and the standard one is dropped.
+# Standard fields (Shreyan's layout rule, 2026-11-19). The keys JSON files
+# include them; the tool also adds any that are missing here. If the input
+# file already contains a pair with the same parameter name, the file's
+# pair keeps its file position and the standard one is dropped.
 # FormID and UniqueID both point at "Unique ID" on purpose — that is how
 # the webhook screenshot shows them.
 STANDARD_TOP = [

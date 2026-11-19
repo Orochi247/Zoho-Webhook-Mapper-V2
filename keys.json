@@ -1,5 +1,25 @@
 [
   {
+    "parameter_name": "Property Type",
+    "zoho_label": "Property Type",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Standard"
+  },
+  {
+    "parameter_name": "Address",
+    "zoho_label": "Address",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Standard"
+  },
+  {
     "parameter_name": "General_Information_Unit_Number",
     "zoho_label": "Unit Number",
     "property_types": [
@@ -1456,5 +1476,95 @@
       "land"
     ],
     "section": "Remarks Information"
+  },
+  {
+    "parameter_name": "task_id",
+    "zoho_label": "task_id",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Standard"
+  },
+  {
+    "parameter_name": "FormID",
+    "zoho_label": "Unique ID",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Standard"
+  },
+  {
+    "parameter_name": "UniqueID",
+    "zoho_label": "Unique ID",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Standard"
+  },
+  {
+    "parameter_name": "Date_Created",
+    "zoho_label": "Date-Time",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Standard"
+  },
+  {
+    "parameter_name": "env",
+    "zoho_label": "env",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Standard"
+  },
+  {
+    "parameter_name": "added_time",
+    "zoho_label": "Added Time",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Standard"
+  },
+  {
+    "parameter_name": "ip_address",
+    "zoho_label": "IP Address",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Standard"
+  },
+  {
+    "parameter_name": "house_id",
+    "zoho_label": "house_id",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Standard"
+  },
+  {
+    "parameter_name": "live_key",
+    "zoho_label": "live_key",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Standard"
   }
 ]
