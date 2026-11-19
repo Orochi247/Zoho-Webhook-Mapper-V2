@@ -23,9 +23,9 @@ This tool fills that table **automatically**:
 1. A **Windows** computer with **Google Chrome** installed.
 2. **Python** installed. (If your computer does not have it, ask Shreyan — do not skip this.)
 3. Access to the **Zoho Form** you are working on.
-4. These two files, kept together in **one folder** (for example, a folder on your Desktop called `Webhook Mapper`):
-   - `webhook_mapper_v2.py` — the tool itself
-   - The **JSON file for your form** — this is the list of fields for that MLS/form, for example `keys_nabor_all_types_v2.json`
+4. These two files from this GitHub repo, kept together in **one folder** (for example, a folder on your Desktop called `Webhook Mapper`):
+   - `app.py` — the tool itself
+   - The **JSON file for your form** — this is the list of fields for that MLS/form, for example `keys.json`
 
    ⚠️ **Use the JSON file made for your form only.** Every MLS/form has a different JSON file. If you are not sure which file to use, ask Shreyan before starting.
 
@@ -58,7 +58,7 @@ In the black window, copy this line, paste it, and press **Enter**.
 Replace the JSON file name and the link with your form's details:
 
 ```
-python webhook_mapper_v2.py keys_nabor_all_types_v2.json --limit 3 --url PASTE_YOUR_FORM_LINK_HERE
+python app.py keys.json --limit 3 --url PASTE_YOUR_FORM_LINK_HERE
 ```
 
 - The part after `--url` is your form's **Integrate page link** (the same Zoho page link you normally open for the webhook).
@@ -87,7 +87,7 @@ Chrome will open by itself.
 - If the test looks correct, run the **full file** — same command, but **without** `--limit 3`:
 
 ```
-python webhook_mapper_v2.py keys_nabor_all_types_v2.json --url PASTE_YOUR_FORM_LINK_HERE
+python app.py keys.json --url PASTE_YOUR_FORM_LINK_HERE
 ```
 
 - If Zoho asks / the page already has the test rows filled, remove all rows again first (Step 1) so the full run starts clean.
@@ -102,7 +102,7 @@ You have two choices:
 - **Automatic way:** run the full command with `--delete-extra` at the end, and the tool will delete them for you:
 
 ```
-python webhook_mapper_v2.py keys_nabor_all_types_v2.json --url PASTE_YOUR_FORM_LINK_HERE --delete-extra
+python app.py keys.json --url PASTE_YOUR_FORM_LINK_HERE --delete-extra
 ```
 
 ### Step 7 — Check everything and Save
@@ -148,6 +148,52 @@ python webhook_mapper_v2.py keys_nabor_all_types_v2.json --url PASTE_YOUR_FORM_L
 4. **Never share the `zoho_profile` folder.** It has your Zoho login in it.
 5. **Do not edit the JSON file** unless Shreyan asks you to.
 6. Work on a **copy/test webhook first** if you are doing a form type you have never done before.
+
+---
+
+## Making the JSON file for a new MLS (copy-paste prompt)
+
+Every MLS needs its own JSON file. You can create it with an AI chat (ChatGPT, Claude, Gemini, or Muse) using the prompt below. You need two PDFs:
+
+1. **The MLS input sheet PDF** (for example, the Residential / Multi-Family / Land input sheets) — this decides the **order** and the **section names**.
+2. **The Zoho form builder page PDF print** (open the form in the Zoho builder and print/save the full page as PDF) — this decides the **exact field names** in the form.
+
+**Steps:**
+
+1. Open your AI chat and attach **both PDFs** (attach all the MLS PDFs if there is more than one property type).
+2. Copy the full prompt below and paste it as your message.
+3. The AI will reply with only JSON. Copy the full reply and save it as a `.json` file (for example `keys.json`) in the same folder as the tool.
+4. Always test the new file first with `--limit 3` (Step 2 above), and check the rows carefully before the full run.
+
+**The prompt — copy everything inside the box:**
+
+```
+You are given two kinds of PDFs:
+1. MLS PDF(s) — the official MLS input sheet(s). These decide the ORDER of the fields and the SECTION NAMES.
+2. ZOHO BUILDER PDF — a print of the Zoho form builder page. This decides the EXACT FIELD NAMES (labels) that exist in the form.
+
+Create the webhook mapping JSON used by our Zoho Webhook Mapper tool.
+
+Rules:
+1. Go through the MLS PDF section by section, field by field, in the exact PDF order. Do not change the order.
+2. For each MLS field, find the same field in the Zoho builder PDF and use its EXACT Zoho label (same spelling, same words) as "zoho_label". If the wording is slightly different but it is clearly the same field, still match it.
+3. "parameter_name" format: <Section>_<FieldName> in Title_Case_With_Underscores, for example General_Information_County. The section part is the MLS PDF section name. Keep the field's wording. Remove special characters. "#" becomes "Number". "Y/N" becomes "YN". Write fractions in words (1/2 = Half, 1/4 = One_Quarter, 3/4 = Three_Quarter). Roman numerals in numbered fields become normal numbers (II = 2).
+4. Skip a field completely if:
+   - it has no matching field in the Zoho builder PDF, or
+   - it is hidden in Zoho (it has an orange/yellow eye icon next to it in the builder print), or
+   - it is a signature box, or the date-time field just below a signature box.
+5. Never repeat a "parameter_name" and never repeat a "zoho_label". If two fields would get the same name, add a meaningful word to make it different (like Details, Type, Features, Information). Never use _1, _2 numbering.
+6. If the same MLS field is a different Zoho field for each property type (because the options are different), include EACH type's Zoho field at that same position. Example: "Property Sub Type" becomes Home Type for Residential, Multi-Family Sub-Type for Multi-Family, and Land Sub-Type for Land. Follow the same pattern for any other field like this.
+7. If I give MLS PDFs for more than one property type (Residential, Multi-Family, Land), make ONE single merged JSON. Keep the Residential order as the main order, and add fields that appear only in the other types right after the nearest related field.
+8. If Zoho implements an MLS table (like Rooms or Units Information) using generic repeating fields instead of the PDF's named rows, include those generic Zoho fields once, at that table's position in the PDF order.
+9. Do NOT include the common system fields (task_id, FormID, UniqueID, Date_Created, Address, env, added_time, ip_address, house_id). The tool handles them separately.
+
+Output: ONLY a JSON array in this exact format. No explanation, no extra text, no markdown:
+[
+  {"parameter_name": "General_Information_County", "zoho_label": "County"},
+  {"parameter_name": "General_Information_List_Price", "zoho_label": "List Price"}
+]
+```
 
 ---
 
