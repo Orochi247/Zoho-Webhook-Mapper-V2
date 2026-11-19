@@ -40,6 +40,36 @@
     "section": "General Information"
   },
   {
+    "parameter_name": "General_Information_Listing_Date",
+    "zoho_label": "Listing Date",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "General Information"
+  },
+  {
+    "parameter_name": "General_Information_Listing_Term",
+    "zoho_label": "Listing Term",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "General Information"
+  },
+  {
+    "parameter_name": "General_Information_Plan_End_Date",
+    "zoho_label": "Plan End Date",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "General Information"
+  },
+  {
     "parameter_name": "General_Information_Subject_To",
     "zoho_label": "Subject To",
     "property_types": [
@@ -292,6 +322,66 @@
     "section": "Brokerage Information"
   },
   {
+    "parameter_name": "Brokerage_Information_Exempted_Name_Prospects",
+    "zoho_label": "Exempted Name Prospects",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Brokerage Information"
+  },
+  {
+    "parameter_name": "Brokerage_Information_Allow_Address_Display",
+    "zoho_label": "Allow Address Display",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Brokerage Information"
+  },
+  {
+    "parameter_name": "Brokerage_Information_Internet_OK",
+    "zoho_label": "Internet OK",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Brokerage Information"
+  },
+  {
+    "parameter_name": "Brokerage_Information_Allow_VOW",
+    "zoho_label": "Allow Virtual Office Website",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Brokerage Information"
+  },
+  {
+    "parameter_name": "Brokerage_Information_Allow_Blogging",
+    "zoho_label": "Allow Blogging",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Brokerage Information"
+  },
+  {
+    "parameter_name": "Brokerage_Information_Allow_Auto_Valuation",
+    "zoho_label": "Allow Auto Valuation",
+    "property_types": [
+      "residential",
+      "multi_family",
+      "land"
+    ],
+    "section": "Brokerage Information"
+  },
+  {
     "parameter_name": "Property_Information_Location",
     "zoho_label": "Location",
     "property_types": [
@@ -303,6 +393,15 @@
     "parameter_name": "Property_Information_Description",
     "zoho_label": "Description",
     "property_types": [
+      "land"
+    ],
+    "section": "Property Information"
+  },
+  {
+    "parameter_name": "Property_Information_Parking_YN",
+    "zoho_label": "Parking Y/N",
+    "property_types": [
+      "multi_family",
       "land"
     ],
     "section": "Property Information"
@@ -369,6 +468,15 @@
   {
     "parameter_name": "Property_Information_Basement_Description",
     "zoho_label": "Basement Description",
+    "property_types": [
+      "residential",
+      "multi_family"
+    ],
+    "section": "Property Information"
+  },
+  {
+    "parameter_name": "Property_Information_Garage_Carport_YN",
+    "zoho_label": "Garage/Carport Y/N",
     "property_types": [
       "residential",
       "multi_family"
@@ -976,8 +1084,8 @@
     "section": "Interior Information"
   },
   {
-    "parameter_name": "Interior_Information_Number_Of_Fireplaces",
-    "zoho_label": "Number of Fireplaces",
+    "parameter_name": "Interior_Information_Fireplace",
+    "zoho_label": "Fireplace",
     "property_types": [
       "residential",
       "multi_family"
@@ -985,8 +1093,8 @@
     "section": "Interior Information"
   },
   {
-    "parameter_name": "Interior_Information_Fireplace",
-    "zoho_label": "Fireplace",
+    "parameter_name": "Interior_Information_Number_Of_Fireplaces",
+    "zoho_label": "Number of Fireplaces",
     "property_types": [
       "residential",
       "multi_family"
@@ -1006,6 +1114,15 @@
     "parameter_name": "Interior_Information_Fireplace_Level",
     "zoho_label": "Fireplace Level",
     "property_types": [
+      "multi_family"
+    ],
+    "section": "Interior Information"
+  },
+  {
+    "parameter_name": "Interior_Information_Heat_Systems",
+    "zoho_label": "Heat Systems",
+    "property_types": [
+      "residential",
       "multi_family"
     ],
     "section": "Interior Information"
@@ -1047,8 +1164,8 @@
     "section": "Interior Information"
   },
   {
-    "parameter_name": "Interior_Information_Air_Condition_Description",
-    "zoho_label": "Air Condition Description",
+    "parameter_name": "Interior_Information_Number_Of_Air_Conditioner",
+    "zoho_label": "Number of Air/Conditioner",
     "property_types": [
       "residential",
       "multi_family"
@@ -1056,8 +1173,8 @@
     "section": "Interior Information"
   },
   {
-    "parameter_name": "Interior_Information_Number_Of_Water_Heaters",
-    "zoho_label": "Number of Water Heaters",
+    "parameter_name": "Interior_Information_Air_Condition_Description",
+    "zoho_label": "Air Condition Description",
     "property_types": [
       "residential",
       "multi_family"
@@ -1074,8 +1191,26 @@
     "section": "Interior Information"
   },
   {
+    "parameter_name": "Interior_Information_Number_Of_Water_Heaters",
+    "zoho_label": "Number of Water Heaters",
+    "property_types": [
+      "residential",
+      "multi_family"
+    ],
+    "section": "Interior Information"
+  },
+  {
     "parameter_name": "Interior_Information_Water_Heater_Description",
     "zoho_label": "Water Heater Description",
+    "property_types": [
+      "residential",
+      "multi_family"
+    ],
+    "section": "Interior Information"
+  },
+  {
+    "parameter_name": "Interior_Information_Disabled_Access_YN",
+    "zoho_label": "Disabled Access",
     "property_types": [
       "residential",
       "multi_family"

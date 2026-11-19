@@ -13,6 +13,7 @@ This tool fills that table **automatically**:
 - It writes the correct **Parameter Name** on the left side of each row.
 - It selects the correct **field** in the dropdown on the right side.
 - It fills the rows in the **correct MLS PDF order**, which is why we use it.
+- It also adds the **standard fields by itself**: **Property Type** and **Address** at the top, and **task_id, FormID, UniqueID, Date_Created, env, added_time, ip_address, house_id** and **live_key** at the bottom. These are **not** in the JSON file — never add them to the JSON yourself.
 
 **The tool never clicks Save.** You always check the table yourself and click Save in Zoho. If something looks wrong, just don't save — nothing is changed permanently.
 
@@ -93,7 +94,7 @@ python app.py keys.json --url PASTE_YOUR_FORM_LINK_HERE
 - If Zoho asks / the page already has the test rows filled, remove all rows again first (Step 1) so the full run starts clean.
 
 ### Step 6 — Remove the extra rows
-Zoho's Auto-Map creates a row for **every** field in the form, but our JSON file does not use all of them (for example, hidden fields are skipped on purpose). So after filling, there will be some **extra rows at the end**.
+Zoho's Auto-Map creates a row for **every** field in the form, but our JSON file does not use all of them (for example, fields that belong to other property types). So after filling, there will be some **extra rows at the end**.
 
 The tool will tell you how many extra rows there are and will save their names in a file called `extra_rows.txt`.
 
@@ -119,7 +120,6 @@ python app.py keys.json --url PASTE_YOUR_FORM_LINK_HERE --delete-extra
 | File | What it means |
 |---|---|
 | `failed_rows.txt` | Rows the tool could **not** fill. If this file has anything in it, those rows need to be filled by hand, or ask Shreyan. |
-| `skipped_fields.txt` | Fields that were **skipped on purpose** (hidden fields). This is normal — no action needed. |
 | `extra_rows.txt` | The extra Auto-Map rows at the end that are **not** in our list. Delete these in Zoho before saving (see Step 6). |
 | `zoho_profile` (folder) | This folder remembers your Zoho login. **Do not delete it, do not share it with anyone.** It contains your login session. |
 
@@ -178,15 +178,15 @@ Rules:
 1. Go through the MLS PDF section by section, field by field, in the exact PDF order. Do not change the order.
 2. For each MLS field, find the same field in the Zoho builder PDF and use its EXACT Zoho label (same spelling, same words) as "zoho_label". If the wording is slightly different but it is clearly the same field, still match it.
 3. "parameter_name" format: <Section>_<FieldName> in Title_Case_With_Underscores, for example General_Information_County. The section part is the MLS PDF section name. Keep the field's wording. Remove special characters. "#" becomes "Number". "Y/N" becomes "YN". Write fractions in words (1/2 = Half, 1/4 = One_Quarter, 3/4 = Three_Quarter). Roman numerals in numbered fields become normal numbers (II = 2).
-4. Skip a field completely if:
-   - it has no matching field in the Zoho builder PDF, or
-   - it is hidden in Zoho (it has an orange/yellow eye icon next to it in the builder print), or
-   - it is a signature box, or the date-time field just below a signature box.
-5. Never repeat a "parameter_name" and never repeat a "zoho_label". If two fields would get the same name, add a meaningful word to make it different (like Details, Type, Features, Information). Never use _1, _2 numbering.
-6. If the same MLS field is a different Zoho field for each property type (because the options are different), include EACH type's Zoho field at that same position. Example: "Property Sub Type" becomes Home Type for Residential, Multi-Family Sub-Type for Multi-Family, and Land Sub-Type for Land. Follow the same pattern for any other field like this.
-7. If I give MLS PDFs for more than one property type (Residential, Multi-Family, Land), make ONE single merged JSON. Keep the Residential order as the main order, and add fields that appear only in the other types right after the nearest related field.
-8. If Zoho implements an MLS table (like Rooms or Units Information) using generic repeating fields instead of the PDF's named rows, include those generic Zoho fields once, at that table's position in the PDF order.
-9. Do NOT include the common system fields (task_id, FormID, UniqueID, Date_Created, Address, env, added_time, ip_address, house_id). The tool handles them separately.
+4. Skip a field completely if it has no matching field in the Zoho builder PDF, or if it is a signature box, or the date-time field just below a signature box.
+5. HIDDEN FIELDS: a field that is hidden in Zoho (orange/yellow eye icon next to it in the builder print) is mapped like any other field, at its PDF position. Do NOT skip a field just because it is hidden. The only exception is the standard fields in rule 11 — never include those.
+6. Never repeat a "parameter_name" and never repeat a "zoho_label". If two fields would get the same name, add a meaningful word to make it different (like Details, Type, Features, Information). Never use _1, _2 numbering.
+7. If the same MLS field is a different Zoho field for each property type (because the options are different), include EACH type's Zoho field at that same position. Example: "Property Sub Type" becomes Home Type for Residential, Multi-Family Sub-Type for Multi-Family, and Land Sub-Type for Land. Follow the same pattern for any other field like this.
+8. LISTING DATES: if the PDF has "List Date" and "Expire Date", call them "Listing Date" and "Plan End Date" (parameter names end with _Listing_Date and _Plan_End_Date), and ALWAYS add a field "Listing Term" (parameter name ends with _Listing_Term, zoho_label "Listing Term") between them. These three always stay together, in this order, in every form.
+9. If I give MLS PDFs for more than one property type (Residential, Multi-Family, Land), make ONE single merged JSON. Keep the Residential order as the main order, and add fields that appear only in the other types right after the nearest related field.
+10. If Zoho implements an MLS table (like Rooms or Units Information) using generic repeating fields instead of the PDF's named rows, include those generic Zoho fields once, at that table's position in the PDF order.
+11. CONVENIENCE RADIOS: some fields in the Zoho builder PDF are Yes/No radios that are NOT in the MLS PDF. We add them in the form for seller convenience, and the related detail fields depend on them. Example: a "Fireplace" radio, with Number of Fireplaces, Fireplace Type and Fireplace Features under it. If you see such a radio in the builder PDF, INCLUDE it in the JSON, placed right before the first field that depends on it. Its parameter name follows rule 3, using the section the group belongs to.
+12. Do NOT include the standard fields — the mapper tool adds them itself. They are: Property Type and Address (mapped at the top), and task_id, FormID, UniqueID, Date_Created, env, added_time, ip_address, house_id and live_key (mapped at the bottom).
 
 Output: ONLY a JSON array in this exact format. No explanation, no extra text, no markdown:
 [

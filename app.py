@@ -21,12 +21,19 @@ Two modes (--mode):
     Use it if Auto-Map is unavailable or you only want a subset of rows
     created from scratch.
 
+Standard fields (the tool adds these itself — do NOT put them in the JSON):
+  Top, before all file fields:    Property Type -> Property Type,
+                                  Address -> Address
+  Bottom, after all file fields:  task_id, FormID, UniqueID, Date_Created,
+                                  env, added_time, ip_address, house_id and
+                                  live_key (see STANDARD_TOP / STANDARD_BOTTOM).
+  Pass --no-standard to turn this off (not recommended).
+
 Hidden fields:
-  Fields whose Zoho label is a hidden field (orange / yellow eye-slash icon in
-  the form builder) are SKIPPED by default. See HIDDEN_ZOHO_LABELS below and
-  the --include-hidden flag. The 9 common fields are NOT added unless you pass
-  --include-common (most of them are hidden/system fields; the screenshot
-  mapping for them is kept in COMMON_MAP).
+  Hidden fields (orange / yellow eye-slash icon in the form builder) are
+  MAPPED like any other field when they are present in the input file. Most
+  hidden fields are either standard fields (added above) or appear in the
+  MLS PDF, in which case the input file carries them at their PDF position.
 
 Setup:
     python -m pip install playwright
@@ -59,13 +66,13 @@ from pathlib import Path
 WEBHOOK_URL = (
     "https://forms.zoho.com/houzeo/form/"
     "testARNorthwestArkansasBoardofRealtorsNABORMLSData/integrate"
-    # v1's hardcoded form. Pass --url for any other form, e.g. NABOR.
+    # The NABOR test form (Shreyan's default, as in the GitHub repo's app.py).
+    # Pass --url for any other form.
 )
 
 BROWSER_CHANNEL = "chrome"          # "chrome" or "msedge" (uses the browser already installed)
 PROFILE_DIR = "./zoho_profile"      # keeps your login/MFA session between runs
 FAILED_LOG = Path("failed_rows.txt")
-SKIPPED_LOG = Path("skipped_fields.txt")
 
 TYPE_DELAY_MS = 5                   # per-keystroke delay; raise if Zoho misses key events
 SETTLE_MS = 350                     # wait after each action so Zoho can update the row
@@ -137,42 +144,26 @@ OPTION_SELECTORS = [
     "div[class*='option']",
 ]
 
-# Zoho labels of hidden fields (orange/yellow eye-slash in the builder).
-# This set is from the NABOR builder print, Page 10 hidden block.
-# Add/remove labels for other MLS forms, or mark a field "hidden": true
-# in the input file — both are honoured.
-HIDDEN_ZOHO_LABELS = {
-    "Time",
-    "Exempted Name Prospects",
-    "Allow Virtual Office Website",
-    "Internet OK",
-    "Allow Blogging",
-    "Allow Address Display",
-    "Allow Auto Valuation",
-    "live_key",
-    "task_id",
-    "Unique ID",
-    "env",
-    "Listing Date",
-    "Plan End Date",
-    "Listing Term",
-    "Private Agent Remark",
-    "house_id",
-}
-
-# The 9 common fields and the right-dropdown label seen for each in the
-# webhook screenshot. Only used with --include-common. They bypass the
-# hidden-field filter on purpose: the server expects them first.
-COMMON_MAP = [
+# Standard fields the tool always adds itself (Shreyan's layout rule,
+# 2026-11-19). They are NOT part of the input JSON. If the input file
+# already contains a pair with the same parameter name, the file's pair
+# keeps its file position and the standard one is dropped.
+# FormID and UniqueID both point at "Unique ID" on purpose — that is how
+# the webhook screenshot shows them.
+STANDARD_TOP = [
+    ("Property Type", "Property Type"),
+    ("Address", "Address"),
+]
+STANDARD_BOTTOM = [
     ("task_id", "task_id"),
     ("FormID", "Unique ID"),
     ("UniqueID", "Unique ID"),
     ("Date_Created", "Date-Time"),
-    ("Address", "Address"),
     ("env", "env"),
     ("added_time", "Added Time"),
     ("ip_address", "IP Address"),
     ("house_id", "house_id"),
+    ("live_key", "live_key"),
 ]
 
 # --------------------------------------------------------------------------
@@ -199,12 +190,11 @@ def label_candidates(parameter_name, zoho_label):
     return candidates
 
 
-def _pair(parameter_name, zoho_label=None, hidden=False, match=None):
+def _pair(parameter_name, zoho_label=None, match=None):
     return {
         "parameter_name": str(parameter_name),
         "zoho_label": zoho_label,
         "candidates": label_candidates(str(parameter_name), zoho_label),
-        "hidden_flag": bool(hidden),
         "match": match,
     }
 
@@ -212,7 +202,7 @@ def _pair(parameter_name, zoho_label=None, hidden=False, match=None):
 def load_pairs(path):
     """Accepts, in order of preference:
     1. Master JSON: {"sections": [{"fields": [{"parameter_name", "zoho_label",
-       "match", "hidden"?}, ...]}, ...], "hidden_zoho_labels"?: [...]}
+       "match"}, ...]}, ...]}
        Fields with match == "pdf_only" or no zoho_label are counted, not mapped.
     2. Pairs list:  [{"parameter_name": ..., "zoho_label": ...}, ...]
        (also accepts {"parameter"/"name"} and {"field"/"label"} keys)
@@ -222,9 +212,6 @@ def load_pairs(path):
     """
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     stats = {"pdf_only_skipped": 0, "total_in_file": 0}
-
-    if isinstance(data, dict) and "hidden_zoho_labels" in data:
-        HIDDEN_ZOHO_LABELS.update(str(x) for x in data["hidden_zoho_labels"])
 
     # 1. Master JSON
     if isinstance(data, dict) and isinstance(data.get("sections"), list):
@@ -237,7 +224,6 @@ def load_pairs(path):
                     stats["pdf_only_skipped"] += 1
                     continue
                 pairs.append(_pair(field["parameter_name"], zoho,
-                                   hidden=field.get("hidden", False),
                                    match=field.get("match")))
         return pairs, stats
 
@@ -250,8 +236,7 @@ def load_pairs(path):
             zoho = item.get("zoho_label") or item.get("field") or item.get("label")
             if not param:
                 continue
-            pairs.append(_pair(param, zoho, hidden=item.get("hidden", False),
-                               match=item.get("match")))
+            pairs.append(_pair(param, zoho, match=item.get("match")))
         return pairs, stats
 
     # 3. Object mapping
@@ -273,17 +258,16 @@ def load_pairs(path):
     raise ValueError("JSON must be a master object, a pairs list, an object, or a flat list")
 
 
-def split_hidden(pairs, include_hidden):
-    """Returns (to_map, skipped_hidden)."""
-    if include_hidden:
-        return pairs, []
-    to_map, skipped = [], []
-    for p in pairs:
-        if p["hidden_flag"] or (p["zoho_label"] in HIDDEN_ZOHO_LABELS):
-            skipped.append(p)
-        else:
-            to_map.append(p)
-    return to_map, skipped
+def add_standard_fields(pairs):
+    """Wrap the file's pairs with the standard top/bottom fields.
+
+    Dedupe is by parameter_name: a pair already present in the file keeps
+    its file position and the standard copy is dropped.
+    """
+    have = {p["parameter_name"] for p in pairs}
+    top = [_pair(p, z) for p, z in STANDARD_TOP if p not in have]
+    bottom = [_pair(p, z) for p, z in STANDARD_BOTTOM if p not in have]
+    return top + pairs + bottom
 
 # --------------------------------------------------------------------------
 # Page actions
@@ -587,36 +571,35 @@ def main():
     ap.add_argument("--url", default=WEBHOOK_URL)
     ap.add_argument("--start", type=int, default=0)
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--no-standard", action="store_true",
+                    help="do NOT add the standard fields (Property Type + Address on top, "
+                         "system fields + live_key at the bottom). Not recommended")
     ap.add_argument("--include-hidden", action="store_true",
-                    help="also map hidden (orange eye) fields instead of skipping them")
+                    help="(deprecated, ignored) hidden fields in the file are now always mapped")
     ap.add_argument("--include-common", action="store_true",
-                    help="prepend the 9 common fields (see COMMON_MAP) before the file's fields")
+                    help="(deprecated, ignored) the standard fields are now always added; see --no-standard")
     ap.add_argument("--mode", choices=["automap", "add"], default="automap",
                     help="automap: Auto-Map all fields, then rewrite rows in sequence (default, no + needed). "
                          "add: click + for each new row, then set both sides")
     ap.add_argument("--delete-extra", action="store_true",
-                    help="automap mode: delete rows beyond the input length (hidden/unused fields) "
+                    help="automap mode: delete rows beyond the input length (unused fields) "
                          "using the - button, from the bottom up. Default: leave and report them")
     ap.add_argument("--always-plus", action="store_true",
                     help="add mode: click + for every row, even if blank rows already exist")
     ap.add_argument("--inspect", action="store_true",
                     help="open the page, dump row/dropdown HTML to inspect.txt, and exit")
     ap.add_argument("--dry-run", action="store_true",
-                    help="print the pairs that would be mapped (after hidden filtering) and exit")
+                    help="print the pairs that would be mapped (including standard fields) and exit")
     args = ap.parse_args()
 
     pairs, stats = load_pairs(args.json_file)
-    pairs, skipped = split_hidden(pairs, args.include_hidden)
 
-    if args.include_common:
-        common = [_pair(p, z) for p, z in COMMON_MAP]
-        pairs = common + pairs
+    if args.include_hidden or args.include_common:
+        print("Note: --include-hidden / --include-common are no longer needed — "
+              "hidden fields in the file are mapped, and the standard fields are always added.")
+    if not args.no_standard:
+        pairs = add_standard_fields(pairs)
 
-    if skipped:
-        with SKIPPED_LOG.open("w", encoding="utf-8") as f:
-            for p in skipped:
-                f.write(f"{p['parameter_name']}\t{p['zoho_label']}\n")
-        print(f"Skipped {len(skipped)} hidden field(s) — see {SKIPPED_LOG}. Use --include-hidden to map them.")
     if stats["pdf_only_skipped"]:
         print(f"Skipped {stats['pdf_only_skipped']} field(s) with no Zoho counterpart (pdf_only in the master).")
 
@@ -693,7 +676,7 @@ def main():
                     log_fail(index, pair, e)
 
             # --- Extra rows: fields Auto-Map created that the input does not use
-            # (hidden fields, other property types, system fields). They sit
+            # (other property types, unused form fields). They sit
             # after the last mapped row. Report them; delete only if asked. ---
             total_rows = page.locator(ROW).count()
             used_rows = args.start + len(pairs)
