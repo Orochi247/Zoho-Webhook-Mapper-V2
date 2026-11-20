@@ -51,6 +51,8 @@ and save.
 
 import argparse
 import json
+import difflib
+import re
 import sys
 from pathlib import Path
 
@@ -296,6 +298,18 @@ _SET_SELECT_BY_TEXT_JS = """
 """
 
 
+_GET_OPTION_TEXTS_JS = "el => Array.from(el.options).map(o => o.text.trim())"
+
+
+def _norm_label(s):
+    """Normalise a label for comparison: collapse whitespace runs and drop
+    spaces around '/' — Zoho option text and file labels can differ only in
+    spacing (e.g. 'Exchange/Broker' vs 'Exchange / Broker'). The value that
+    gets set is always the dropdown's own original text, never this form."""
+    s = re.sub(r"\s+", " ", s or "").strip()
+    return re.sub(r"\s*/\s*", "/", s)
+
+
 def _select_via_select2_ui(page, row, candidates):
     """Fallback: click the visible Select2 box in this row, type the label
     in its search box if one appears, and click the matching result."""
@@ -342,23 +356,47 @@ def select_right(page, row, candidates):
     """
     select = row.locator(FIELD_SELECT).first
     if select.count() > 0:
-        for cand in candidates:
-            try:
-                result = select.evaluate(_SET_SELECT_BY_TEXT_JS, cand)
-            except Exception:
-                result = None
-            if result and result.get("found"):
-                if result.get("count", 1) > 1:
-                    print(f"    [warn] label {cand!r} matches {result['count']} dropdown options; used the first (value={result.get('value')})")
-                page.wait_for_timeout(SETTLE_MS)
-                return cand
-            # Belt and braces: try Playwright's own select_option too.
-            try:
-                select.select_option(label=cand, force=True)
-                page.wait_for_timeout(SETTLE_MS)
-                return cand
-            except Exception:
-                continue
+        # Read the row's option list ONCE. Matching is done against this
+        # list, so a label that is not there fails in about a second —
+        # previously each candidate fell through to the Select2 UI scan,
+        # which took minutes on a 170-row page before failing anyway.
+        try:
+            texts = select.evaluate(_GET_OPTION_TEXTS_JS)
+        except Exception:
+            texts = None
+        if texts is not None:
+            by_norm = {}
+            for t in texts:
+                by_norm.setdefault(_norm_label(t), t)
+            for cand in candidates:
+                target = by_norm.get(_norm_label(cand))
+                if target is None:
+                    continue
+                try:
+                    result = select.evaluate(_SET_SELECT_BY_TEXT_JS, target)
+                except Exception:
+                    result = None
+                if result and result.get("found"):
+                    if result.get("count", 1) > 1:
+                        print(f"    [warn] label {target!r} matches {result['count']} dropdown options; used the first (value={result.get('value')})")
+                    page.wait_for_timeout(SETTLE_MS)
+                    return cand
+                # Belt and braces: try Playwright's own select_option too.
+                try:
+                    select.select_option(label=target, force=True)
+                    page.wait_for_timeout(SETTLE_MS)
+                    return cand
+                except Exception:
+                    continue
+            close = difflib.get_close_matches(
+                _norm_label(candidates[0]),
+                [_norm_label(t) for t in dict.fromkeys(texts)],
+                n=3, cutoff=0.55)
+            hint = f"; closest options in this row's dropdown: {close}" if close else ""
+            raise RuntimeError(
+                f"no <option> with exact text matched; tried {candidates}{hint} "
+                "— the file's label probably differs from the Zoho label; fix the file")
+        # Could not read the option list at all: last-resort UI path.
         used = _select_via_select2_ui(page, row, candidates)
         if used:
             return used
