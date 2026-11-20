@@ -151,49 +151,75 @@ python app.py keys.json --url PASTE_YOUR_FORM_LINK_HERE --delete-extra
 
 ---
 
-## Making the JSON file for a new MLS (copy-paste prompt)
+## Making the JSON file for a new MLS (3-step prompt pack)
 
-Every MLS needs its own JSON file. You can create it with an AI chat (ChatGPT, Claude, Gemini, or Muse) using the prompt below. You need two PDFs:
+Every MLS needs its own JSON file. Create it in **Muse** (use Muse itself, like we do — not a random AI chat) using the 3 messages below, **in one single chat, one message at a time**. Do NOT use one single prompt for everything — that gives incomplete JSON. The steps work because the AI first lists the fields, then matches them, then generates.
 
-1. **The MLS input sheet PDF** (for example, the Residential / Multi-Family / Land input sheets) — this decides the **order** and the **section names**.
-2. **The Zoho form builder page PDF print** (open the form in the Zoho builder and print/save the full page as PDF) — this decides the **exact field names** in the form.
+You need two things:
 
-**Steps:**
+1. **The MLS input sheet PDF(s)** — decides the **order** and **section names**.
+2. **The Zoho form builder page PDF print** (open the form in the Zoho builder, print/save the full page as PDF) — decides the **exact field names**.
 
-1. Open your AI chat and attach **both PDFs** (attach all the MLS PDFs if there is more than one property type).
-2. Copy the full prompt below and paste it as your message.
-3. The AI will reply with only JSON. Copy the full reply and save it as a `.json` file (for example `keys.json`) in the same folder as the tool.
-4. Always test the new file first with `--limit 3` (Step 2 above), and check the rows carefully before the full run.
-
-**The prompt — copy everything inside the box:**
+### Message 1 — attach the MLS PDF(s) only, and send this:
 
 ```
-You are given two kinds of PDFs:
-1. MLS PDF(s) — the official MLS input sheet(s). These decide the ORDER of the fields and the SECTION NAMES.
-2. ZOHO BUILDER PDF — a print of the Zoho form builder page. This decides the EXACT FIELD NAMES (labels) that exist in the form.
+Read every page of the attached MLS input sheet PDF(s) carefully.
+List EVERY section and EVERY field, in the exact order they appear on the PDF.
+Fields only — do not list the options inside checkbox / radio / dropdown fields.
+Number the fields continuously and give me the total count at the end.
+Do not create any JSON yet. Just give me the list, section by section.
+```
 
-Create the webhook mapping JSON used by our Zoho Webhook Mapper tool.
+Read the reply. If pages or sections look missing, tell Muse which page to re-read before continuing.
+
+### Message 2 — attach the Zoho builder PDF print, and send this:
+
+```
+Now read the attached Zoho form builder PDF print.
+List EVERY field label exactly as written in the builder, in order.
+Mark each field that has an orange/yellow eye icon next to it as [hidden].
+Mark signature fields as [signature].
+Give me the total count at the end. Do not create any JSON yet.
+```
+
+### Message 3 — send this (no new attachments):
+
+```
+Now create the webhook mapping JSON from the two lists you just made.
 
 Rules:
-1. Go through the MLS PDF section by section, field by field, in the exact PDF order. Do not change the order.
-2. For each MLS field, find the same field in the Zoho builder PDF and use its EXACT Zoho label (same spelling, same words) as "zoho_label". If the wording is slightly different but it is clearly the same field, still match it.
-3. "parameter_name" format: <Section>_<FieldName> in Title_Case_With_Underscores, for example General_Information_County. The section part is the MLS PDF section name. Keep the field's wording. Remove special characters. "#" becomes "Number". "Y/N" becomes "YN". Write fractions in words (1/2 = Half, 1/4 = One_Quarter, 3/4 = Three_Quarter). Roman numerals in numbered fields become normal numbers (II = 2).
-4. Skip a field completely if it has no matching field in the Zoho builder PDF, or if it is a signature box, or the date-time field just below a signature box.
-5. HIDDEN FIELDS: a field that is hidden in Zoho (orange/yellow eye icon next to it in the builder print) is mapped like any other field, at its PDF position. Do NOT skip a field just because it is hidden. The only exception is the standard fields in rule 12 — they do not sit at a PDF position; they go at the top and bottom as rule 12 says.
-6. Never repeat a "parameter_name" and never repeat a "zoho_label". If two fields would get the same name, add a meaningful word to make it different (like Details, Type, Features, Information). Never use _1, _2 numbering.
-7. If the same MLS field is a different Zoho field for each property type (because the options are different), include EACH type's Zoho field at that same position. Example: "Property Sub Type" becomes Home Type for Residential, Multi-Family Sub-Type for Multi-Family, and Land Sub-Type for Land. Follow the same pattern for any other field like this.
-8. LISTING DATES: if the PDF has "List Date" and "Expire Date", call them "Listing Date" and "Plan End Date" (parameter names end with _Listing_Date and _Plan_End_Date), and ALWAYS add a field "Listing Term" (parameter name ends with _Listing_Term, zoho_label "Listing Term") between them. These three always stay together, in this order, in every form.
-9. If I give MLS PDFs for more than one property type (Residential, Multi-Family, Land), make ONE single merged JSON. Keep the Residential order as the main order, and add fields that appear only in the other types right after the nearest related field.
-10. If Zoho implements an MLS table (like Rooms or Units Information) using generic repeating fields instead of the PDF's named rows, include those generic Zoho fields once, at that table's position in the PDF order.
-11. CONVENIENCE RADIOS: some fields in the Zoho builder PDF are Yes/No radios that are NOT in the MLS PDF. We add them in the form for seller convenience, and the related detail fields depend on them. Example: a "Fireplace" radio, with Number of Fireplaces, Fireplace Type and Fireplace Features under it. If you see such a radio in the builder PDF, INCLUDE it in the JSON, placed right before the first field that depends on it. Its parameter name follows rule 3, using the section the group belongs to.
-12. STANDARD FIELDS: always include these standard fields in the JSON, in exactly these positions. At the very top, before all other fields: "Property Type" (zoho_label "Property Type"), then "Address" (zoho_label "Address"). At the very bottom, after all other fields, in this order: task_id (zoho_label "task_id"), FormID (zoho_label "Unique ID"), UniqueID (zoho_label "Unique ID"), Date_Created (zoho_label "Date-Time"), env (zoho_label "env"), added_time (zoho_label "Added Time"), ip_address (zoho_label "IP Address"), house_id (zoho_label "house_id"), live_key (zoho_label "live_key"). FormID and UniqueID both use "Unique ID" on purpose — this is the one allowed duplicate zoho_label.
+1. Order and section names come from the MLS list (Message 1). Go field by field in that exact order.
+2. For each MLS field, use the matching field's EXACT label from the builder list (Message 2) as "zoho_label". If the wording is slightly different but it is clearly the same field, still match it.
+3. "parameter_name" format: <Section>_<FieldName> in Title_Case_With_Underscores, for example General_Information_County. Keep the field's wording. Remove special characters. "#" becomes "Number". "Y/N" becomes "YN". Fractions in words (1/2 = Half, 1/4 = One_Quarter, 3/4 = Three_Quarter). Roman numerals become normal numbers (II = 2).
+4. Skip a field only if it has no matching field in the builder list, or it is a signature field or the date-time field below a signature.
+5. HIDDEN FIELDS: hidden fields are mapped like normal fields, at their PDF position. Do not skip a field because it is hidden. (Exception: the standard fields in rule 9.)
+6. Never repeat a "parameter_name" or a "zoho_label". If two fields would get the same name, add a meaningful word (Details, Type, Features, Information). Never use _1, _2.
+7. If the same MLS field is a different builder field per property type, include EACH type's version at that position. Example: "Property Sub Type" = Home Type (Residential), Multi-Family Sub-Type (Multi-Family), Land Sub-Type (Land).
+8. LISTING DATES: "List Date" and "Expire Date" are called "Listing Date" and "Plan End Date" (parameter names end _Listing_Date / _Plan_End_Date), and ALWAYS add "Listing Term" (parameter _Listing_Term) between them.
+9. STANDARD FIELDS: at the very top add "Property Type" (zoho_label "Property Type"), then "Address" (zoho_label "Address"). At the very bottom add, in this order: task_id, FormID (zoho_label "Unique ID"), UniqueID (zoho_label "Unique ID"), Date_Created (zoho_label "Date-Time"), env, added_time (zoho_label "Added Time"), ip_address (zoho_label "IP Address"), house_id, live_key. FormID and UniqueID both using "Unique ID" is the one allowed duplicate label.
+10. CONVENIENCE RADIOS: if the builder list has a Yes/No radio that is NOT in the MLS list and other fields depend on it (example: a "Fireplace" radio above the fireplace detail fields), include it right before the first field that depends on it. ONLY if such a radio actually exists in the builder list — never invent one.
+11. If I gave more than one property type, make ONE merged list: Residential order is the main order; fields unique to other types go right after the nearest related field.
+12. Tables in the PDF (Rooms, Units) that Zoho implements with generic repeating fields: include those generic builder fields once, at the table's position.
 
-Output: ONLY a JSON array in this exact format. No explanation, no extra text, no markdown:
+Before you output, check yourself:
+- First two entries are Property Type and Address; last entry is live_key.
+- Listing Date, Listing Term, Plan End Date are together, in that order.
+- No duplicate parameter names; no duplicate labels except Unique ID twice.
+- Count your entries and tell me the count in one line BEFORE the JSON.
+
+Output format: one line with the total count, then ONLY a JSON array like this — no explanation after it:
 [
   {"parameter_name": "General_Information_County", "zoho_label": "County"},
   {"parameter_name": "General_Information_List_Price", "zoho_label": "List Price"}
 ]
+If the JSON is too long for one reply, give it in parts, section by section, and I will say "continue" — do not skip or summarise any field.
 ```
+
+### After you get the JSON
+
+1. Copy the full JSON and save it as a `.json` file in the same folder as the tool.
+2. Run the mapper with `--dry-run` on it — the count should match the count Muse claimed.
+3. Always test with `--limit 3` first (Step 2 above), and spot-check the start, the listing trio, one radio group (like Fireplace) and the bottom standard block before the full run.
 
 ---
 
