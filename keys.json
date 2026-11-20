@@ -1068,6 +1068,134 @@
     "section": "Rooms Information"
   },
   {
+    "parameter_name": "Rooms_Information_Other_Room_1",
+    "zoho_label": "Other Room 1",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_1_Name",
+    "zoho_label": "Other Room 1 - Name",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_1_Dimensions",
+    "zoho_label": "Other Room 1 - Dimensions",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_1_Level",
+    "zoho_label": "Other Room 1 - Level",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_2",
+    "zoho_label": "Other Room 2",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_2_Name",
+    "zoho_label": "Other Room 2 - Name",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_2_Dimensions",
+    "zoho_label": "Other Room 2 - Dimensions",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_2_Level",
+    "zoho_label": "Other Room 2 - Level",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_3",
+    "zoho_label": "Other Room 3",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_3_Name",
+    "zoho_label": "Other Room 3 - Name",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_3_Dimensions",
+    "zoho_label": "Other Room 3 - Dimensions",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_3_Level",
+    "zoho_label": "Other Room 3 - Level",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_4",
+    "zoho_label": "Other Room 4",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_4_Name",
+    "zoho_label": "Other Room 4 - Name",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_4_Dimensions",
+    "zoho_label": "Other Room 4 - Dimensions",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
+    "parameter_name": "Rooms_Information_Other_Room_4_Level",
+    "zoho_label": "Other Room 4 - Level",
+    "property_types": [
+      "residential"
+    ],
+    "section": "Rooms Information"
+  },
+  {
     "parameter_name": "Interior_Information_Appliances",
     "zoho_label": "Appliances",
     "property_types": [

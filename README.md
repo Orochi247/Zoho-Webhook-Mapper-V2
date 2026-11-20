@@ -201,6 +201,7 @@ Rules:
 11. If I gave more than one property type, make ONE merged list: Residential order is the main order; fields unique to other types go right after the nearest related field.
 12. Tables in the PDF (Rooms, Units) that Zoho implements with generic repeating fields: include those generic builder fields once, at the table's position.
 
+13. OTHER ROOMS: the Zoho form has team-added "Other Room" fields that are NOT in the MLS PDF (Other Room 1, Other Room 2, and so on), and each one has Name, Dimensions and Level fields in the builder list. Include all of them — the room field itself first, then its Name, Dimensions and Level — placed immediately after the LAST field of the Rooms section.
 Before you output, check yourself:
 - First two entries are Property Type and Address; last entry is live_key.
 - Listing Date, Listing Term, Plan End Date are together, in that order.
