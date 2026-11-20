@@ -4,22 +4,19 @@ Zoho Forms Webhook Mapper v2 — maps BOTH sides of each webhook row, in your or
 Difference from v1 (webhook_mapper.py in Orochi247/Zoho-Webhook-Mapper):
   v1 renamed the LEFT Parameter Name of rows that Auto-Map had already created,
   so the row order (and therefore the payload / output PDF order) stayed in
-  Zoho form order. v2 builds the rows itself, in the order of your input file:
-    1. click the + (plus) icon to add a row,
-    2. type the Parameter Name into the left input,
-    3. open the right dropdown and select the Zoho form field by its label.
-  Because rows are created in input order, an input file in official MLS PDF
-  order (sections + sequence) produces a webhook in MLS PDF order.
+  Zoho form order. v2 rewrites BOTH sides of each row, in the order of your
+  input file: row i of the page becomes pair i of your file — left Parameter
+  Name typed, right dropdown changed to the pair's Zoho label. An input file
+  in official MLS PDF order therefore produces a webhook in MLS PDF order.
 
-Two modes (--mode):
-  automap (default): use Zoho's own "Auto-Map Fields" to create one row per
-    form field, then rewrite each row in sequence — left Parameter Name from
-    the input, right dropdown changed to the input's Zoho label. Row i of the
-    page becomes pair i of your file, so the sequence is yours, not Zoho's.
-    This mode does not need the + button at all.
-  add: the flow above — click + for each new row, then set both sides.
-    Use it if Auto-Map is unavailable or you only want a subset of rows
-    created from scratch.
+How rows are created:
+  The script does not create rows and does not click anything except the
+  row controls it fills. YOU create the rows: when the script pauses, click
+  Zoho's "Auto-Map Fields" yourself so there is one row per form field,
+  then press Enter. (The Auto-Map automation and the + / - button code were
+  removed on 2026-11-20 — they overlapped this simpler flow.) Rows beyond
+  the input's length are reported in extra_rows.txt and left in place;
+  delete them in Zoho before saving.
 
 Standard fields (the keys JSON files include them; the tool also adds any
 that are missing, and dedupes by parameter name so each is mapped once):
@@ -46,10 +43,10 @@ Run:
     python webhook_mapper_v2.py pairs.json               # full run
     python webhook_mapper_v2.py pairs.json --url <form integrate URL>
 
-IMPORTANT: Zoho's page structure is not fully known from screenshots alone.
-If the + button or the right dropdown is not found, run --inspect once and
-share inspect.txt — the selectors at the top of this file are the only thing
-that should need adjusting. The script never clicks Save; you review and save.
+IMPORTANT: If the right dropdown is not found on a row, run --inspect once
+and share inspect.txt — the selectors at the top of this file are the only
+thing that should need adjusting. The script never clicks Save; you review
+and save.
 """
 
 import argparse
@@ -82,17 +79,6 @@ SETTLE_MS = 350                     # wait after each action so Zoho can update 
 ROW = "div[elname='webhookPayloadParam']"
 LEFT_INPUT = "div[elname='webhookPayloadParam'] input[elname='param_name']"
 
-# Candidate selectors for the + (add row) button, tried in order.
-# The screenshot shows a green + icon at the right end of a row.
-PLUS_SELECTORS = [
-    "div[elname='webhookPayloadParam'] [elname='addParam']",
-    "div[elname='webhookPayloadParam'] .addIcon",
-    "div[elname='webhookPayloadParam'] a[title*='Add' i]",
-    "div[elname='webhookPayloadParam'] span[title*='Add' i]",
-    "[elname='addWebhookParam']",
-    ".webhookAddRow",
-]
-
 # The right-hand field control INSIDE one row. Confirmed from Zoho's actual
 # DOM (DevTools screenshot, 2026-11-19):
 #   row  = div.webhook_Payload[elname='webhookPayloadParam']
@@ -117,20 +103,6 @@ RIGHT_CONTROL_SELECTORS = [
     "input:not([elname='param_name'])",
     ".zf-select",
     "[class*='dropdown']",
-]
-
-# The "Auto-Map Fields" link at the top right of the Payload Mapping page
-# (visible in the screenshot). Tried by exact text first.
-AUTOMAP_TEXT = "Auto-Map Fields"
-
-# Candidate selectors for the - (remove row) button, tried in order.
-# The screenshot shows a red - icon next to the + icon at the end of a row.
-MINUS_SELECTORS = [
-    "div[elname='webhookPayloadParam'] [elname='removeParam']",
-    "div[elname='webhookPayloadParam'] .removeIcon",
-    "div[elname='webhookPayloadParam'] a[title*='Remove' i]",
-    "div[elname='webhookPayloadParam'] span[title*='Remove' i]",
-    "div[elname='webhookPayloadParam'] a[title*='Delete' i]",
 ]
 
 EXTRA_LOG = Path("extra_rows.txt")
@@ -398,53 +370,6 @@ def select_right(page, row, candidates):
     raise RuntimeError(f"no {FIELD_SELECT} found in row and Select2 UI fallback failed; tried {candidates}")
 
 
-def click_plus(page):
-    """Click the + (add row) button. Returns True if a selector matched."""
-    for selector in PLUS_SELECTORS:
-        btn = page.locator(selector).last
-        if btn.count() > 0:
-            try:
-                btn.scroll_into_view_if_needed()
-                btn.click()
-                page.wait_for_timeout(SETTLE_MS)
-                return True
-            except Exception:
-                continue
-    # Fallback: the green + icon sits right after the last row in the
-    # screenshot; try any visible element whose text is exactly '+' near rows.
-    try:
-        btn = page.locator(ROW).last.locator("xpath=following-sibling::*//*[normalize-space(text())='+']").first
-        if btn.count() > 0:
-            btn.click()
-            page.wait_for_timeout(SETTLE_MS)
-            return True
-    except Exception:
-        pass
-    return False
-
-
-def click_automap(page):
-    """Click Zoho's 'Auto-Map Fields' link. Returns True if clicked."""
-    try:
-        link = page.get_by_text(AUTOMAP_TEXT, exact=True).first
-        if link.count() > 0 and link.is_visible():
-            link.click()
-            page.wait_for_timeout(SETTLE_MS * 4)  # automap can take a moment
-            return True
-    except Exception:
-        pass
-    for selector in ("a:has-text('Auto-Map')", "span:has-text('Auto-Map')", "[title*='Auto-Map' i]"):
-        try:
-            el = page.locator(selector).first
-            if el.count() > 0 and el.is_visible():
-                el.click()
-                page.wait_for_timeout(SETTLE_MS * 4)
-                return True
-        except Exception:
-            continue
-    return False
-
-
 def read_right_text(row):
     """Best-effort read of a row's current right-dropdown value, for logging."""
     for selector in RIGHT_CONTROL_SELECTORS:
@@ -461,60 +386,6 @@ def read_right_text(row):
         except Exception:
             continue
     return ""
-
-
-def delete_row_at(page, index):
-    """Click the - (remove) button for the row at `index`. Returns True if
-    the row count went down."""
-    rows = page.locator(ROW)
-    before = rows.count()
-    if index >= before:
-        return False
-    row = rows.nth(index)
-    for selector in MINUS_SELECTORS:
-        # MINUS_SELECTORS are page-scoped; scope them to this row's position
-        # by taking the nth match on the page (one - button per row).
-        btn = page.locator(selector).nth(index)
-        if btn.count() > 0:
-            try:
-                btn.scroll_into_view_if_needed()
-                btn.click()
-                page.wait_for_timeout(SETTLE_MS)
-                if page.locator(ROW).count() < before:
-                    return True
-            except Exception:
-                continue
-    # Fallback: a '-' control inside the row container itself.
-    try:
-        btn = row.locator("xpath=.//*[normalize-space(text())='-']").first
-        if btn.count() > 0:
-            btn.click()
-            page.wait_for_timeout(SETTLE_MS)
-            return page.locator(ROW).count() < before
-    except Exception:
-        pass
-    return False
-
-
-def ensure_row(page, index, always_plus):
-    """Make sure a row exists for `index` and return its row locator.
-
-    Default flow: reuse an existing blank row if one is available
-    (the page usually loads with one), otherwise click + for a new row.
-    With always_plus=True, click + for every field after the first row
-    is known to be blank-free — use this if your page loads with no rows.
-    """
-    rows = page.locator(ROW)
-    count = rows.count()
-    if index < count and not always_plus:
-        return rows.nth(index)
-    before = count
-    if not click_plus(page):
-        raise RuntimeError("could not find the + (add row) button — run with --inspect and share inspect.txt")
-    rows = page.locator(ROW)
-    if rows.count() <= before:
-        raise RuntimeError("clicked +, but no new row appeared")
-    return rows.nth(rows.count() - 1)
 
 
 def inspect_page(page):
@@ -541,26 +412,8 @@ def inspect_page(page):
         out.append(f"\n--- FIRST ROW DROPDOWN ---\noptions: {info['count']}\n" + "\n".join(info["sample"]))
     except Exception as e:
         out.append(f"Dropdown info unavailable ({e})")
-    # Hunt for the + / - controls anywhere near the rows: they are not inside
-    # the row element itself (a row contains only paramNameDiv + paramValueDiv).
-    try:
-        found = page.evaluate(
-            """() => Array.from(document.querySelectorAll('*'))
-              .filter(el => {
-                const s = ((el.getAttribute('elname') || '') + ' ' + (el.className && el.className.baseVal !== undefined ? '' : (el.className || '')) + ' ' + (el.getAttribute('title') || '')).toLowerCase();
-                return /add|remove|delete|plus|minus/.test(s) && el.children.length <= 2;
-              })
-              .slice(0, 40)
-              .map(el => el.tagName + ' elname=' + (el.getAttribute('elname') || '') +
-                         ' class=' + (el.getAttribute('class') || '') +
-                         ' title=' + (el.getAttribute('title') || '') +
-                         ' text=' + (el.innerText || '').trim().slice(0, 30))"""
-        )
-        out.append("\n--- POSSIBLE + / - CONTROLS ---\n" + ("\n".join(found) if found else "none found"))
-    except Exception as e:
-        out.append(f"+/- hunt unavailable ({e})")
     Path("inspect.txt").write_text("\n".join(out), encoding="utf-8")
-    print("Wrote inspect.txt — share it if the + button or dropdown selectors need fixing.")
+    print("Wrote inspect.txt — share it if the dropdown selectors need fixing.")
 
 # --------------------------------------------------------------------------
 # Main
@@ -579,14 +432,6 @@ def main():
                     help="(deprecated, ignored) hidden fields in the file are now always mapped")
     ap.add_argument("--include-common", action="store_true",
                     help="(deprecated, ignored) the standard fields are now always added; see --no-standard")
-    ap.add_argument("--mode", choices=["automap", "add"], default="automap",
-                    help="automap: Auto-Map all fields, then rewrite rows in sequence (default, no + needed). "
-                         "add: click + for each new row, then set both sides")
-    ap.add_argument("--delete-extra", action="store_true",
-                    help="automap mode: delete rows beyond the input length (unused fields) "
-                         "using the - button, from the bottom up. Default: leave and report them")
-    ap.add_argument("--always-plus", action="store_true",
-                    help="add mode: click + for every row, even if blank rows already exist")
     ap.add_argument("--inspect", action="store_true",
                     help="open the page, dump row/dropdown HTML to inspect.txt, and exit")
     ap.add_argument("--dry-run", action="store_true",
@@ -631,7 +476,8 @@ def main():
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
         page.goto(args.url)
 
-        input("Log in if needed, open the Webhooks configuration (Payload Mapping), then press Enter...")
+        input("Log in if needed, open the Webhooks configuration (Payload Mapping), "
+              "click 'Auto-Map Fields' so there is one row per form field, then press Enter...")
 
         if args.inspect:
             inspect_page(page)
@@ -648,67 +494,43 @@ def main():
             with FAILED_LOG.open("a", encoding="utf-8") as f:
                 f.write(f"{index}\t{pair['parameter_name']}\t{pair['zoho_label']}\t{e}\n")
 
-        if args.mode == "automap":
-            # --- Auto-Map mode: rows come from Zoho, sequence comes from us ---
-            rows_now = page.locator(ROW).count()
-            print(f"Rows on page before Auto-Map: {rows_now}")
-            if click_automap(page):
-                print("Clicked 'Auto-Map Fields'.")
-            else:
-                print("Could not click 'Auto-Map Fields' automatically.")
-                input("Click 'Auto-Map Fields' at the top right of Payload Mapping yourself, then press Enter...")
-            total_rows = page.locator(ROW).count()
-            print(f"Rows on page after Auto-Map: {total_rows}, pairs to place: {len(pairs)}")
-            if total_rows == 0:
-                print("No rows found — check you are on the Payload Mapping page. Nothing was filled.")
-                ctx.close()
-                return
+        # --- Single flow: the user created the rows (Auto-Map Fields);
+        # the script rewrites them in input order, both sides. ---
+        total_rows = page.locator(ROW).count()
+        print(f"Rows on page: {total_rows}, pairs to place: {len(pairs)}")
+        if total_rows == 0:
+            print("No rows found — check you are on the Payload Mapping page and that "
+                  "you clicked 'Auto-Map Fields'. Nothing was filled.")
+            ctx.close()
+            return
 
-            for offset, pair in enumerate(pairs):
-                index = args.start + offset
-                try:
-                    if index < page.locator(ROW).count():
-                        row = page.locator(ROW).nth(index)
-                    else:
-                        # More pairs than Auto-Map rows: fall back to + for the overflow.
-                        row = ensure_row(page, index, always_plus=True)
-                    process_row(index, row, pair)
-                except Exception as e:
-                    log_fail(index, pair, e)
+        for offset, pair in enumerate(pairs):
+            index = args.start + offset
+            if index >= page.locator(ROW).count():
+                log_fail(index, pair, RuntimeError(
+                    "no row on the page for this pair — Auto-Map created fewer rows than the input has"))
+                continue
+            try:
+                process_row(index, page.locator(ROW).nth(index), pair)
+            except Exception as e:
+                log_fail(index, pair, e)
 
-            # --- Extra rows: fields Auto-Map created that the input does not use
-            # (other property types, unused form fields). They sit
-            # after the last mapped row. Report them; delete only if asked. ---
-            total_rows = page.locator(ROW).count()
-            used_rows = args.start + len(pairs)
-            if total_rows > used_rows:
-                extras = []
-                for idx in range(used_rows, total_rows):
-                    extras.append((idx, read_right_text(page.locator(ROW).nth(idx))))
-                with EXTRA_LOG.open("w", encoding="utf-8") as f:
-                    for idx, txt in extras:
-                        f.write(f"{idx}\t{txt}\n")
-                print(f"{len(extras)} extra row(s) beyond the input (indexes {used_rows}-{total_rows - 1}) — listed in {EXTRA_LOG}.")
-                if args.delete_extra:
-                    # Delete from the bottom up so indexes do not shift.
-                    for idx in range(total_rows - 1, used_rows - 1, -1):
-                        if delete_row_at(page, idx):
-                            print(f"[del]  {idx}: removed extra row")
-                        else:
-                            print(f"[del?] {idx}: could not remove — remove it manually before saving")
-                else:
-                    print("Leaving extra rows in place. Delete them in Zoho before saving, "
-                          "or re-run with --delete-extra. (They would otherwise be sent with "
-                          "their Auto-Map names.)")
-        else:
-            # --- Add mode: + for each row, then set both sides ---
-            for offset, pair in enumerate(pairs):
-                index = args.start + offset
-                try:
-                    row = ensure_row(page, index, args.always_plus)
-                    process_row(index, row, pair)
-                except Exception as e:
-                    log_fail(index, pair, e)
+        # --- Extra rows: fields Auto-Map created that the input does not use
+        # (other property types, unused form fields). They sit after the last
+        # mapped row. Report them and leave them in place — delete them in
+        # Zoho before saving, or they will be sent with their Auto-Map names. ---
+        total_rows = page.locator(ROW).count()
+        used_rows = args.start + len(pairs)
+        if total_rows > used_rows:
+            extras = []
+            for idx in range(used_rows, total_rows):
+                extras.append((idx, read_right_text(page.locator(ROW).nth(idx))))
+            with EXTRA_LOG.open("w", encoding="utf-8") as f:
+                for idx, txt in extras:
+                    f.write(f"{idx}\t{txt}\n")
+            print(f"{len(extras)} extra row(s) beyond the input (indexes {used_rows}-{total_rows - 1}) — listed in {EXTRA_LOG}.")
+            print("Leaving extra rows in place. Delete them in Zoho before saving; "
+                  "they would otherwise be sent with their Auto-Map names.")
 
         input("Review the page, SAVE the webhook manually, then press Enter to close...")
         ctx.close()

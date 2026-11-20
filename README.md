@@ -1,6 +1,6 @@
 # Zoho Webhook Mapper v2 — Quick Guide
 
-You already know Mapper v1. What v2 changes: it maps **both sides** of each row — Parameter Name on the left, field dropdown on the right — in **MLS PDF order**, using Zoho's Auto-Map to create the rows. The tool never clicks Save; you review and save.
+You already know Mapper v1. What v2 changes: it maps **both sides** of each row — Parameter Name on the left, field dropdown on the right — in **MLS PDF order**. You create the rows with Zoho's Auto-Map button; the tool rewrites them in order. The tool never clicks Save; you review and save.
 
 **Files you need** (from this GitHub repo, keep them in one folder): `app.py` and the JSON file for your form, e.g. `keys.json`. One form = one JSON — don't mix them up.
 
@@ -21,8 +21,8 @@ python -m pip install playwright
 python app.py keys.json --limit 3 --url PASTE_YOUR_FORM_LINK_HERE
 ```
 
-3. Chrome opens by itself. Log in to Zoho, open the Payload Mapping page, then press **Enter** in the terminal. The tool clicks **Auto-Map Fields** itself (if it can't, it asks you to click it). **Don't touch Chrome while it runs** — `[ok]` in the terminal means the row is done.
-4. Check the 3 rows. If they look right, remove all rows again and run the **full file** — same command without `--limit 3`. Add `--delete-extra` to auto-delete the leftover Auto-Map rows, or delete them yourself from the bottom up before saving.
+3. Chrome opens by itself. Log in to Zoho, open the Payload Mapping page, and click **Auto-Map Fields** yourself so there is one row per field. Then press **Enter** in the terminal. **Don't touch Chrome while it runs** — `[ok]` in the terminal means the row is done.
+4. Check the 3 rows. If they look right, remove all rows again and run the **full file** — same command without `--limit 3`. Delete the leftover Auto-Map rows (listed in `extra_rows.txt`) yourself from the bottom up before saving.
 5. Check the start, middle and end of the table, then click **Save** in Zoho yourself.
 
 **Good to know**
