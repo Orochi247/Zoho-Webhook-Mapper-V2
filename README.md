@@ -78,10 +78,11 @@ Rules:
 12. Tables in the PDF (Rooms, Units) that Zoho implements with generic repeating fields: include those generic builder fields once, at the table's position.
 
 13. OTHER ROOMS: the Zoho form has team-added "Other Room" fields that are NOT in the MLS PDF (Other Room 1, Other Room 2, and so on), and each one has Name, Dimensions and Level fields in the builder list. Include all of them — the room field itself first, then its Name, Dimensions and Level — placed immediately after the LAST field of the Rooms section.
+14. SAME FIELD UNDER DIFFERENT SECTION NAMES: different property types' sheets may name the same section differently (example: "General" on one sheet, "General Information" on another; "Residence" vs "Building Information"). A field is the same field if it has the same builder label — include it ONCE, at its Residential position, even if another type's sheet lists it under a different section heading. The output is ONE payload for all property types, so the same zoho_label must never appear twice in the merged JSON (the only exception is Unique ID, rule 9).
 Before you output, check yourself:
 - First two entries are Property Type and Address; last entry is live_key.
 - Listing Date, Listing Term, Plan End Date are together, in that order.
-- No duplicate parameter names; no duplicate labels except Unique ID twice.
+- No duplicate parameter names; no duplicate labels except Unique ID twice — check duplicates across ALL property types, not just within one type's list.
 - Count your entries and tell me the count in one line BEFORE the JSON.
 
 Output format: one line with the total count, then ONLY a JSON array like this — no explanation after it:
